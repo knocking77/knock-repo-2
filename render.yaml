@@ -1,0 +1,13 @@
+# Render Blueprint: 무료(free) 플랜으로 AI 요청 대시보드 미리보기를 배포한다
+services:
+  - type: web
+    name: ai-request-dashboard
+    runtime: docker
+    plan: free
+    rootDir: knock-start-2
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/info
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: demo

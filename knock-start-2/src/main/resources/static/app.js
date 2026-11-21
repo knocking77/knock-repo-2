@@ -1,6 +1,6 @@
 'use strict';
 
-const state = { days: 30, project: '', q: '', starred: false };
+const state = { days: 30, project: '', q: '', starred: false, demo: false };
 const charts = {};
 const $ = (id) => document.getElementById(id);
 const nf = new Intl.NumberFormat('ko-KR');
@@ -104,6 +104,7 @@ async function loadProjects() {
 }
 
 async function loadCollectInfo(r) {
+  if (state.demo) { $('collectInfo').textContent = '예시 데이터로 보여주는 미리보기 화면입니다'; return; }
   r = r || await fetch('/api/collect/last').then((x) => x.ok ? x.text() : '').then((t) => t ? JSON.parse(t) : null);
   $('collectInfo').textContent = r
     ? `마지막 수집 ${new Date(r.finishedAt).toLocaleString('ko-KR')} · 파일 ${r.scanned}개 · 반영 ${r.imported}개${r.errors.length ? ` · 오류 ${r.errors.length}개` : ''}`
@@ -165,6 +166,12 @@ $('collectBtn').addEventListener('click', async () => {
   } finally { b.disabled = false; b.textContent = '지금 수집'; }
 });
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', loadStats);
+
+api('/api/info').then((i) => {
+  $('badge').textContent = 'v' + i.version + (i.demo ? ' · 데모' : '');
+  $('demoNote').hidden = !i.demo;
+  if (i.demo) { state.demo = true; $('collectBtn').hidden = true; loadCollectInfo(); }
+}).catch(() => {});
 
 refreshAll();
 setInterval(refreshAll, 60_000);

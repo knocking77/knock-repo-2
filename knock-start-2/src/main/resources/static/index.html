@@ -9,13 +9,14 @@
 <body>
 <header class="top">
   <div>
-    <h1>AI 요청 대시보드</h1>
+    <h1>AI 요청 대시보드 <span id="badge" class="badge"></span></h1>
     <p class="sub" id="collectInfo">수집 정보를 불러오는 중…</p>
   </div>
   <button id="collectBtn" class="btn primary">지금 수집</button>
 </header>
 
 <main>
+  <p id="demoNote" class="demo-note" hidden>데모 모드입니다. 화면의 데이터는 자동 생성된 예시이며, 서버가 재시작되면 메모·태그 변경 내용은 초기화됩니다.</p>
   <section class="filters" aria-label="필터">
     <div class="seg" role="group" aria-label="기간">
       <button data-days="7">7일</button>

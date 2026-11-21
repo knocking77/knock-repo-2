@@ -19,6 +19,26 @@ JDK 17 이상이 필요합니다.
 # 브라우저에서 http://localhost:8080
 ```
 
+## 무료 클라우드 미리보기 (Render)
+
+클라우드 서버에는 Claude Code 대화 기록이 없으므로 **데모 모드**(`SPRING_PROFILES_ACTIVE=demo`)로 실행됩니다.
+데모 모드는 최근 45일치 예시 세션 48개를 자동 생성하며, 데이터는 메모리에만 저장되어 재시작하면 초기화됩니다.
+
+1. [render.com](https://render.com)에 GitHub 계정으로 가입합니다.
+2. **New → Blueprint**를 선택하고 이 저장소와 배포할 브랜치를 고릅니다.
+3. 저장소 루트의 `render.yaml`이 자동으로 인식됩니다. **Apply**를 누르면 Docker 빌드 후 배포됩니다(처음 5~10분).
+4. 발급된 `https://ai-request-dashboard-xxxx.onrender.com` 주소로 접속합니다.
+
+무료 플랜은 15분 동안 접속이 없으면 잠들고, 다음 접속 때 깨어나는 데 1분 정도 걸립니다.
+
+로컬에서 데모 모드로 실행하려면 다음 중 하나를 사용합니다.
+
+```bash
+./gradlew bootRun --args='--spring.profiles.active=demo'
+# 또는
+docker build -t ai-dashboard:0.0.1 . && docker run -p 8080:8080 ai-dashboard:0.0.1
+```
+
 ## 설정 (`src/main/resources/application.properties`)
 
 | 키 | 기본값 | 설명 |
@@ -36,6 +56,7 @@ JDK 17 이상이 필요합니다.
 | PATCH | `/api/sessions/{id}` | `{memo, tags, starred}` 수정 |
 | POST | `/api/collect` | 즉시 수집 |
 | GET | `/api/projects` | 프로젝트 목록 |
+| GET | `/api/info` | 버전, 데모 모드 여부 |
 
 ## 다음 단계 (예정)
 
