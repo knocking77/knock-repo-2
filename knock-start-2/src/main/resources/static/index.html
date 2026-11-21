@@ -1,2 +1,89 @@
-knock test 3-5 note
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI 요청 대시보드</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div>
+    <h1>AI 요청 대시보드</h1>
+    <p class="sub" id="collectInfo">수집 정보를 불러오는 중…</p>
+  </div>
+  <button id="collectBtn" class="btn primary">지금 수집</button>
+</header>
 
+<main>
+  <section class="filters" aria-label="필터">
+    <div class="seg" role="group" aria-label="기간">
+      <button data-days="7">7일</button>
+      <button data-days="30" class="on">30일</button>
+      <button data-days="90">90일</button>
+      <button data-days="0">전체</button>
+    </div>
+    <select id="projectSel" aria-label="프로젝트"><option value="">전체 프로젝트</option></select>
+  </section>
+
+  <section class="tiles" id="tiles"></section>
+
+  <section class="grid">
+    <figure class="card wide">
+      <figcaption>일별 요청 수</figcaption>
+      <div class="chart"><canvas id="dailyChart"></canvas></div>
+    </figure>
+    <figure class="card">
+      <figcaption>프로젝트별 요청 수</figcaption>
+      <div class="chart"><canvas id="projectChart"></canvas></div>
+    </figure>
+    <figure class="card">
+      <figcaption>도구 사용 Top 10</figcaption>
+      <div class="chart"><canvas id="toolChart"></canvas></div>
+    </figure>
+  </section>
+
+  <section class="card">
+    <div class="list-head">
+      <h2>세션 목록</h2>
+      <div class="list-tools">
+        <input id="q" type="search" placeholder="요청 내용, 제목, 태그, 메모 검색">
+        <label class="chk"><input type="checkbox" id="starredOnly"> ★만</label>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th></th><th>시작</th><th>제목</th><th>프로젝트</th><th class="num">요청</th><th class="num">도구</th><th class="num">시간</th><th>태그</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <p class="empty" id="empty" hidden>표시할 세션이 없습니다. 상단의 “지금 수집”을 눌러보세요.</p>
+  </section>
+</main>
+
+<dialog id="detail">
+  <form method="dialog" class="dlg-head">
+    <h2 id="dTitle"></h2>
+    <button class="btn" aria-label="닫기">✕</button>
+  </form>
+  <div class="dlg-body">
+    <p class="sub" id="dMeta"></p>
+    <div class="edit">
+      <label class="chk"><input type="checkbox" id="dStar"> 즐겨찾기</label>
+      <input id="dTags" placeholder="태그 (쉼표로 구분)">
+      <textarea id="dMemo" rows="3" placeholder="메모 / 결과 요약"></textarea>
+      <button id="dSave" class="btn primary">저장</button>
+    </div>
+    <h3>요청 내역</h3>
+    <ol id="dPrompts" class="prompts"></ol>
+    <h3>도구 사용</h3>
+    <p id="dTools" class="chips"></p>
+    <h3>변경한 파일</h3>
+    <ul id="dFiles" class="files"></ul>
+  </div>
+</dialog>
+
+<script src="vendor/chart.umd.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
