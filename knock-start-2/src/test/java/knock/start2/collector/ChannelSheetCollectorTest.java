@@ -11,7 +11,7 @@ class ChannelSheetCollectorTest {
     // 실제 "메시지" 탭과 같은 머리글. 열 순서를 바꾸고 새 열(업무ID)을 끼워 넣어도 읽혀야 한다.
     private static final String CSV = "﻿번호,시각 (KST),보낸 이,업무ID,받는 이,제목,내용,답장 대상 번호,상태\r\n"
             + "1,2026-11-22 00:58,캐드,,모두,채널 개설,\"규칙을 읽어주세요, 그리고\n\"\"답장\"\" 부탁\",,새 메시지\r\n"
-            + "2,2026-11-22 02:05,캐대,T-1,zu,[결과] 대시보드,한 일: 수집기,1,완료\r\n"
+            + "2,2026-11-22 2:18,캐대,T-1,zu,[결과] 대시보드,한 일: 수집기,1,완료\r\n"
             + ",,,,,,,,\r\n";
 
     @Test
@@ -33,6 +33,7 @@ class ChannelSheetCollectorTest {
         assertThat(second.getReceiver()).isEqualTo("zu");
         assertThat(second.getReplyTo()).isEqualTo(1);
         assertThat(second.getStatus()).isEqualTo("완료");
+        assertThat(second.getSentAt()).hasToString("2026-11-21T17:18:00Z"); // 시가 한 자리인 경우
         assertThat(c.enabled()).isFalse();
     }
 }

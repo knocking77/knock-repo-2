@@ -34,8 +34,9 @@ public class ChannelSheetCollector {
 
     private static final Logger log = LoggerFactory.getLogger(ChannelSheetCollector.class);
     private static final DateTimeFormatter[] TIME_FORMATS = {
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"),
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"),
+            // 시트가 시각을 날짜 값으로 바꾸면 "2026-11-22 2:18"처럼 시가 한 자리로 표시된다
+            DateTimeFormatter.ofPattern("yyyy-MM-dd H:mm"),
+            DateTimeFormatter.ofPattern("yyyy-MM-dd H:mm:ss"),
             DateTimeFormatter.ofPattern("yyyy. M. d HH:mm"),
             DateTimeFormatter.ofPattern("yyyy. M. d H:mm:ss"),
     };
