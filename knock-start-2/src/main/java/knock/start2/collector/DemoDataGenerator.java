@@ -14,6 +14,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
+import knock.start2.domain.ChannelMessage;
+import knock.start2.domain.ChannelMessageRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -55,11 +57,14 @@ public class DemoDataGenerator implements ApplicationRunner {
     private static final String[] MODELS = {"claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-5-5"};
 
     private final ClaudeCodeCollector collector;
+    private final ChannelMessageRepository channel;
     private final Path dir;
     private final ObjectMapper mapper = new ObjectMapper();
 
-    public DemoDataGenerator(ClaudeCodeCollector collector, @Value("${collector.claude-code.paths}") String path) {
+    public DemoDataGenerator(ClaudeCodeCollector collector, ChannelMessageRepository channel,
+                             @Value("${collector.claude-code.paths}") String path) {
         this.collector = collector;
+        this.channel = channel;
         this.dir = Paths.get(path.split(",")[0].trim());
     }
 
@@ -77,7 +82,39 @@ public class DemoDataGenerator implements ApplicationRunner {
             count++;
         }
         CollectResult res = collector.collect();
-        log.info("데모 데이터 생성: 세션 {}개, 반영 {}개", count, res.imported());
+        int msgs = seedChannel(new Random(7), now);
+        log.info("데모 데이터 생성: 세션 {}개, 반영 {}개, 채널 메시지 {}개", count, res.imported(), msgs);
+    }
+
+    /** 여러 AI 가 공통 채널로 주고받는 예시 메시지. 실제 시트 내용과는 무관한 가상 데이터. */
+    private int seedChannel(Random rnd, Instant now) {
+        String[][] flows = {
+                {"사용자", "zu", "[요청] 주간 업무 정리", "이번 주 진행한 일을 정리해 주세요."},
+                {"zu", "캐대", "[요청] 대시보드 필터 추가", "AI별로 걸러 볼 수 있게 해 주세요."},
+                {"캐대", "zu", "[결과] 대시보드 필터 추가", "한 일: AI별 필터 / 결과물: 브랜치 링크 / 남은 일: 없음"},
+                {"zu", "캐드", "[요청] 업무 흐름 분석", "메시지 전달 경로가 긴 곳을 찾아 주세요."},
+                {"캐드", "zu", "[결과] 업무 흐름 분석", "meti 경로가 가장 깁니다. 단순 작업은 바로 보내기를 제안합니다."},
+                {"zu", "meti", "[요청] 회의록 초안", "내용 없이 기록만 남깁니다."},
+                {"meti", "zu", "[결과] 회의록 초안", "초안 작성 완료 (회사 자료라 내용 생략)"},
+                {"cbot", "모두", "[공유] 참고 자료", "관련 문서 링크를 공유합니다."},
+                {"사용자", "캐대", "[요청] 시트 수집 기능", "공통 채널을 대시보드 수집 대상으로 넣어 주세요."},
+                {"캐대", "zu", "[결과] 시트 수집 기능", "한 일: 시트 수집기 / 남은 일: 시트 공유 설정"},
+        };
+        String[] statuses = {"완료", "완료", "완료", "읽음", "새 메시지"};
+        List<ChannelMessage> list = new ArrayList<>();
+        int no = 1;
+        for (int round = 0; round < 3; round++) {
+            for (String[] f : flows) {
+                long minutesAgo = (long) ((3 - round) * 7L * 24 * 60 - (no * 97L % (7 * 24 * 60)));
+                String status = round < 2 ? "완료" : statuses[rnd.nextInt(statuses.length)];
+                Integer replyTo = f[2].startsWith("[결과]") ? no - 1 : null;
+                list.add(new ChannelMessage(no, now.minus(Math.max(minutesAgo, 5), ChronoUnit.MINUTES),
+                        f[0], f[1], f[2], f[3], replyTo, status));
+                no++;
+            }
+        }
+        channel.saveAll(list);
+        return list.size();
     }
 
     private void writeSession(Random rnd, String project, Instant start) throws IOException {

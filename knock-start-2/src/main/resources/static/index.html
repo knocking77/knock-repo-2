@@ -44,6 +44,34 @@
     </figure>
   </section>
 
+  <section class="card" id="channelSec" hidden>
+    <div class="list-head">
+      <h2>AI 공통 채널</h2>
+      <div class="list-tools">
+        <select id="chPerson" aria-label="참여자"><option value="">전체 참여자</option></select>
+        <label class="chk"><input type="checkbox" id="chOpen"> 미완료만</label>
+      </div>
+    </div>
+    <div class="tiles" id="chTiles"></div>
+    <div class="grid ch-grid">
+      <figure class="card inner">
+        <figcaption>보낸 이별 메시지</figcaption>
+        <div class="chart"><canvas id="chSenderChart"></canvas></div>
+      </figure>
+      <figure class="card inner">
+        <figcaption>많이 오간 경로</figcaption>
+        <div class="chart"><canvas id="chFlowChart"></canvas></div>
+      </figure>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th class="num">번호</th><th>시각</th><th>보낸 이 → 받는 이</th><th>제목</th><th>상태</th></tr></thead>
+        <tbody id="chRows"></tbody>
+      </table>
+    </div>
+    <p class="sub" id="chError"></p>
+  </section>
+
   <section class="card">
     <div class="list-head">
       <h2>세션 목록</h2>

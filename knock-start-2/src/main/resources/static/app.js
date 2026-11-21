@@ -1,6 +1,6 @@
 'use strict';
 
-const state = { days: 30, project: '', q: '', starred: false, demo: false };
+const state = { days: 30, project: '', q: '', starred: false, demo: false, chPerson: '', chOpen: false };
 const charts = {};
 const $ = (id) => document.getElementById(id);
 const nf = new Intl.NumberFormat('ko-KR');
@@ -105,14 +105,45 @@ async function loadProjects() {
 
 async function loadCollectInfo(r) {
   if (state.demo) { $('collectInfo').textContent = '예시 데이터로 보여주는 미리보기 화면입니다'; return; }
-  r = r || await fetch('/api/collect/last').then((x) => x.ok ? x.text() : '').then((t) => t ? JSON.parse(t) : null);
-  $('collectInfo').textContent = r
-    ? `마지막 수집 ${new Date(r.finishedAt).toLocaleString('ko-KR')} · 파일 ${r.scanned}개 · 반영 ${r.imported}개${r.errors.length ? ` · 오류 ${r.errors.length}개` : ''}`
-    : 'Claude Code 대화 기록을 자동으로 수집합니다 (5분 간격)';
+  r = r || await fetch('/api/collect/last').then((x) => x.ok ? x.json() : null).catch(() => null);
+  if (state.demo) return; // 응답을 기다리는 사이 데모 모드로 확인된 경우
+  const c = r && r.claudeCode, ch = r && r.channel;
+  if (!c) { $('collectInfo').textContent = 'Claude Code 대화 기록과 AI 공통 채널을 자동으로 수집합니다 (5분 간격)'; return; }
+  const parts = [`마지막 수집 ${new Date(c.finishedAt).toLocaleString('ko-KR')}`, `Claude Code 파일 ${c.scanned}개`];
+  if (c.errors.length) parts.push(`오류 ${c.errors.length}개`);
+  if (ch && ch.enabled) parts.push(ch.error ? '공통 채널 수집 실패' : `공통 채널 메시지 ${ch.messages}개`);
+  $('collectInfo').textContent = parts.join(' · ');
+  $('chError').textContent = ch && ch.error ? ch.error : '';
+}
+
+/* ---------- AI 공통 채널 ---------- */
+const STATUS_CLASS = { '새 메시지': 'new', '완료': 'done' };
+async function loadChannel() {
+  const st = await api('/api/channel/stats?' + qs({ project: '' }));
+  $('channelSec').hidden = !st.enabled;
+  if (!st.enabled) return;
+  $('chTiles').innerHTML = [['메시지', st.total], ['미완료', st.open], ['참여자', st.participants]]
+    .map(([l, v]) => `<div class="tile"><div class="label">${l}</div><div class="value">${nf.format(v)}</div></div>`).join('');
+  barChart('chSenderChart', st.bySender.map((d) => d.name), st.bySender.map((d) => d.value), { horizontal: true, valueLabel: '메시지' });
+  barChart('chFlowChart', st.flows.map((d) => d.name), st.flows.map((d) => d.value), { horizontal: true, valueLabel: '메시지' });
+
+  const sel = $('chPerson');
+  const people = [...new Set(st.bySender.map((d) => d.name))].sort();
+  sel.innerHTML = '<option value="">전체 참여자</option>' + people.map((p) => `<option ${p === state.chPerson ? 'selected' : ''}>${esc(p)}</option>`).join('');
+
+  const list = await api('/api/channel/messages?' + qs({ project: '', participant: state.chPerson, openOnly: state.chOpen }));
+  $('chRows').innerHTML = list.slice(0, 30).map((m) => `
+    <tr title="${esc(m.content)}">
+      <td class="num">${m.no}</td>
+      <td>${fmtDate(m.sentAt)}</td>
+      <td>${esc(m.sender)} → ${esc(m.receiver)}</td>
+      <td class="title">${esc(m.subject)}${m.replyTo ? ` <span class="memo-dot">↩ ${m.replyTo}</span>` : ''}</td>
+      <td><span class="status ${STATUS_CLASS[m.status] || ''}">${esc(m.status || '-')}</span></td>
+    </tr>`).join('') || '<tr><td colspan="5" class="empty">메시지가 없습니다</td></tr>';
 }
 
 async function refreshAll() {
-  await Promise.all([loadStats(), loadSessions(), loadProjects(), loadCollectInfo()]);
+  await Promise.all([loadStats(), loadSessions(), loadProjects(), loadCollectInfo(), loadChannel()]);
 }
 
 /* ---------- 상세 ---------- */
@@ -148,7 +179,7 @@ async function saveDetail() {
 document.querySelectorAll('.seg button').forEach((b) => b.addEventListener('click', () => {
   document.querySelectorAll('.seg button').forEach((x) => x.classList.toggle('on', x === b));
   state.days = +b.dataset.days;
-  loadStats(); loadSessions();
+  loadStats(); loadSessions(); loadChannel();
 }));
 $('projectSel').addEventListener('change', (e) => { state.project = e.target.value; loadStats(); loadSessions(); });
 let qTimer;
@@ -156,6 +187,8 @@ $('q').addEventListener('input', (e) => { clearTimeout(qTimer); qTimer = setTime
 $('starredOnly').addEventListener('change', (e) => { state.starred = e.target.checked; loadSessions(); });
 $('rows').addEventListener('click', (e) => { const tr = e.target.closest('tr[data-id]'); if (tr) openDetail(tr.dataset.id); });
 $('dSave').addEventListener('click', saveDetail);
+$('chPerson').addEventListener('change', (e) => { state.chPerson = e.target.value; loadChannel(); });
+$('chOpen').addEventListener('change', (e) => { state.chOpen = e.target.checked; loadChannel(); });
 $('collectBtn').addEventListener('click', async () => {
   const b = $('collectBtn');
   b.disabled = true; b.textContent = '수집 중…';
@@ -165,7 +198,7 @@ $('collectBtn').addEventListener('click', async () => {
     loadCollectInfo(r);
   } finally { b.disabled = false; b.textContent = '지금 수집'; }
 });
-matchMedia('(prefers-color-scheme: dark)').addEventListener('change', loadStats);
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { loadStats(); loadChannel(); });
 
 api('/api/info').then((i) => {
   $('badge').textContent = 'v' + i.version + (i.demo ? ' · 데모' : '');
